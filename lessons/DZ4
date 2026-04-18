@@ -1,0 +1,44 @@
+import pandas as pd
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+TOKEN = "8597941396:AAFcizbo1ubZaS3p-xYr775wVR2pfN7BUYo"
+
+
+def load_table():
+    try:
+        df = pd.read_csv("games_usage.csv", encoding="utf-8", sep=",")
+        return df
+    except UnicodeDecodeError:
+        df = pd.read_csv("games_usage.csv", encoding="cp1251", sep=";")
+        return df
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Привет! Напиши /table чтобы посмотреть таблицу времени по играм."
+    )
+
+
+async def table_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        df = load_table()
+    except Exception as e:
+        await update.message.reply_text(f"Ошибка чтения CSV: {e}")
+        return
+
+    table_str = df.to_string(index=False)
+
+    await update.message.reply_text(
+        f"```\n{table_str}\n```",
+        parse_mode="Markdown"
+    )
+
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("table", table_cmd))
+
+    app.run_polling()
