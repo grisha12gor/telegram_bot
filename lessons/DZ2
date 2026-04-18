@@ -1,0 +1,171 @@
+from telegram import Update
+from telegram.ext import ApplicationBuilder
+from telegram.ext import CommandHandler
+from telegram.ext import MessageHandler
+from telegram.ext import ContextTypes
+from telegram.ext import filters
+
+import random
+
+TOKEN = "8597941396:AAFcizbo1ubZaS3p-xYr775wVR2pfN7BUYo"
+
+games = {}
+letters = "ABCDEFGHIJ"
+
+def make_field():
+    field = [["~" for _ in range(10)] for _ in range(10)]
+
+    ships = [
+        4,       
+        3, 3,     
+        2, 2, 2,  
+        1, 1, 1, 1  
+    ]
+
+    def can_place(x, y, size, horizontal):
+        for i in range(size):
+            nx = x
+            ny = y + i if horizontal else y
+
+            if not (0 <= nx < 10 and 0 <= ny < 10):
+                return False
+
+            if field[nx][ny] != "~":
+                return False
+
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    xx = nx + dx
+                    yy = ny + dy
+                    if 0 <= xx < 10 and 0 <= yy < 10:
+                        if field[xx][yy] == "S":
+                            return False
+        return True
+
+    def place_ship(size):
+        while True:
+            horizontal = random.choice([True, False])
+            x = random.randint(0, 9)
+            y = random.randint(0, 9)
+
+            if horizontal:
+                if y + size > 10:
+                    continue
+            else:
+                if x + size > 10:
+                    continue
+
+            if can_place(x, y, size, horizontal):
+                for i in range(size):
+                    nx = x
+                    ny = y + i if horizontal else y
+                    field[nx][ny] = "S"
+                break
+
+    for s in ships:
+        place_ship(s)
+
+    return field
+
+
+
+def draw(field, show=False):
+    txt = "   " + " ".join(letters) + "\n"
+    for i in range(10):
+        row = str(i+1).rjust(2) + " "
+        for j in range(10):
+            c = field[i][j]
+            if c == "S" and not show:
+                row += "~ "
+            else:
+                row += c + " "
+        txt += row + "\n"
+    return txt
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat.id
+    field = make_field()
+    games[chat] = field
+    await update.message.reply_text("Игра началась! Пиши координаты по типу B2.\n\n" + draw(field))
+
+
+
+async def game(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat.id
+    field = make_field()
+    games[chat] = field
+    await update.message.reply_text("Игра началась! Пиши координаты по типу B2.\n\n" + draw(field))
+
+
+def parse(msg):
+    msg = msg.upper().strip()
+    if len(msg) < 2 or len(msg) > 3:
+        return None
+    col = msg[0]
+    if col not in letters:
+        return None
+    try:
+        row = int(msg[1:]) - 1
+    except:
+        return None
+    if not (0 <= row < 10):
+        return None
+    return row, letters.index(col)
+
+
+async def shot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat.id
+
+    if chat not in games:
+        await update.message.reply_text("Сначала /game")
+        return
+
+    field = games[chat]
+    msg = update.message.text
+    pos = parse(msg)
+
+    if not pos:
+        await update.message.reply_text("Неправильный формат. Пример: B7")
+        return
+
+    r, c = pos
+
+    if field[r][c] == "S":
+        field[r][c] = "X"
+        text = "Попадал!\n"
+    elif field[r][c] in ["X", "o"]:
+        text = "Ты уже стрелял сюда.\n"
+    else:
+        field[r][c] = "o"
+        text = "Мимо.\n"
+
+    alive = any("S" in row for row in field)
+    if not alive:
+        text += "\nКорабль потоплен! Игра окончена.\n"
+        text += draw(field, show=True)
+        games.pop(chat)
+    else:
+        text += draw(field)
+
+    await update.message.reply_text(text)
+
+
+async def main():
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("game", game))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, shot))
+
+    await app.run_polling()
+
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("game", game))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, shot))
+
+    app.run_polling()
