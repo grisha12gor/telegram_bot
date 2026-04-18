@@ -1,0 +1,54 @@
+from telegram import Update
+from telegram.ext import ApplicationBuilder
+from telegram.ext import CommandHandler
+from telegram.ext import ContextTypes
+
+TOKEN = ""
+
+
+def commands_table():
+    rows = [
+        ("Команда", "Описание"),
+        ("/start", "Приветствие"),
+        ("/help", "Показать таблицу команд"),
+        ("/info", "Информация о боте"),
+    ]
+
+    col1 = max(len(r[0]) for r in rows)
+    col2 = max(len(r[1]) for r in rows)
+
+    top =    "┌" + "─" * (col1 + 2) + "┬" + "─" * (col2 + 2) + "┐\n"
+    middle = "├" + "─" * (col1 + 2) + "┼" + "─" * (col2 + 2) + "┤\n"
+    bottom = "└" + "─" * (col1 + 2) + "┴" + "─" * (col2 + 2) + "┘"
+
+    table = top
+    for i, (cmd, desc) in enumerate(rows):
+        table += f"│ {cmd.ljust(col1)} │ {desc.ljust(col2)} │\n"
+        if i == 0:
+            table += middle
+    table += bottom
+
+    return table
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Привет! Напиши /help чтобы увидеть команды.")
+
+
+async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    table = commands_table()
+    await update.message.reply_text(f"```\n{table}\n```", parse_mode="Markdown")
+
+
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Это бот, который выводит таблицу команд.")
+
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("info", info))
+
+    app.run_polling()
