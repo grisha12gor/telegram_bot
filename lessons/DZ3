@@ -3,7 +3,7 @@ from telegram.ext import ApplicationBuilder
 from telegram.ext import CommandHandler
 from telegram.ext import ContextTypes
 
-TOKEN = ""
+TOKEN = "8597941396:AAFcizbo1ubZaS3p-xYr775wVR2pfN7BUYo"
 
 
 def commands_table():
