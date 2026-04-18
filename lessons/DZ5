@@ -1,0 +1,58 @@
+import asyncio
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram.types import (
+    ReplyKeyboardMarkup, KeyboardButton,
+    InlineKeyboardMarkup, InlineKeyboardButton
+)
+
+TOKEN = "8597941396:AAFcizbo1ubZaS3p-xYr775wVR2pfN7BUYo"
+
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
+
+@dp.message(Command("start"))
+async def start(message: types.Message):
+    await message.answer("Привет! Напиши мне любое сообщение — я отвечу кнопками.")
+
+@dp.message()
+async def send_buttons(message: types.Message):
+
+    reply_kb = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Привет"), KeyboardButton(text="Как дела?")],
+            [KeyboardButton(text="Пока")]
+        ],
+        resize_keyboard=True
+    )
+
+    inline_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Нажми", callback_data="btn_press")],
+            [InlineKeyboardButton(text="Открыть сайт", url="https://google.com")]
+        ]
+    )
+
+    await message.answer(
+        "тут все кнопки!\n"
+        "— Reply‑кнопки снизу\n"
+        "— Inline‑кнопки под сообщением",
+        reply_markup=reply_kb
+    )
+
+    await message.answer(
+        "Inline‑кнопки:",
+        reply_markup=inline_kb
+    )
+
+@dp.callback_query(lambda c: c.data == "btn_press")
+async def callback_handler(callback: types.CallbackQuery):
+    await callback.message.answer("Ты нажал inline‑кнопку!")
+    await callback.answer()
+
+async def main():
+    await dp.start_polling(bot)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
