@@ -1,0 +1,41 @@
+import telebot
+from telebot import types
+
+TOKEN = "8597941396:AAFcizbo1ubZaS3p-xYr775wVR2pfN7BUYo"
+bot = telebot.TeleBot(TOKEN)
+
+pizzas = [
+    ("Маргарита", "Классическая пицца с сыром и томатами"),
+    ("Пепперони", "Острая пицца с колбасой пепперони"),
+    ("Гавайская", "Пицца с ананасами и курицей"),
+    ("4 Сыра", "Моцарелла, дорблю, пармезан, чеддер"),
+    ("Мясная", "Пицца с ветчиной, беконом и колбасками")
+]
+
+@bot.message_handler(commands=['start'])
+def start(msg):
+    bot.send_message(
+        msg.chat.id,
+        "Привет! Чтобы открыть меню пиццы, напиши в любом чате:\n\n"
+        "@имя_бота"
+    )
+
+@bot.inline_handler(func=lambda query: True)
+def inline_menu(query):
+    results = []
+
+    for i, (name, desc) in enumerate(pizzas):
+        item = types.InlineQueryResultArticle(
+            id=str(i),
+            title=name,
+            description=desc,
+            input_message_content=types.InputTextMessageContent(
+                message_text=f"Вы выбрали пиццу: *{name}*\nОписание: {desc}",
+                parse_mode="Markdown"
+            )
+        )
+        results.append(item)
+
+    bot.answer_inline_query(query.id, results, cache_time=1)
+
+bot.polling()
