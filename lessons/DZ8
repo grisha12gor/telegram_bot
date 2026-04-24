@@ -1,0 +1,36 @@
+import telebot
+
+TOKEN = "8597941396:AAFcizbo1ubZaS3p-xYr775wVR2pfN7BUYo"
+bot = telebot.TeleBot(TOKEN)
+
+colors = {
+    "бетмен": "чёрный",
+    "супермен": "синий и красный",
+    "железный человек": "красный и золотой",
+    "человек-паук": "красный и синий",
+    "халк": "зелёный",
+    "тор": "серебристый и красный",
+    "чёрная вдова": "чёрный",
+    "капитан америка": "синий, красный и белый"
+}
+
+@bot.message_handler(commands=['start'])
+def start(msg):
+    bot.send_message(
+        msg.chat.id,
+        "Напиши имя супергероя или несколько через запятую.\n"
+        "Пример: Бетмен, Халк, Железный человек"
+    )
+
+@bot.message_handler(func=lambda m: True)
+def get_colors(msg):
+    names = [x.strip().lower() for x in msg.text.split(",")]
+
+    answer = []
+    for name in names:
+        color = colors.get(name, "цвет неизвестен")
+        answer.append(f"{name.title()} — {color}")
+
+    bot.send_message(msg.chat.id, "\n".join(answer))
+
+bot.polling()
