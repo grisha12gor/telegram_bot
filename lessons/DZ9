@@ -1,0 +1,79 @@
+import telebot
+
+TOKEN = "7948845009:AAGP2dbQ-IJaLYi9uy5juxQQAztVw1JAY9w"
+bot = telebot.TeleBot(TOKEN)
+
+questions = [
+    {
+        "q": "Столица Канады?",
+        "options": ["Берлин", "Оттава", "Лиссабон", "Москва"],
+        "answer": 2
+    },
+    {
+        "q": "Сколько будет 2^5?",
+        "options": ["2", "32", "16", "5"],
+        "answer": 2
+    },
+    {
+        "q": "Самые древние пирамиды мира?",
+        "options": ["Майя", "египетские"],
+        "answer": 2
+    }
+]
+
+game_state = {}
+
+
+def send_question(chat_id):
+    idx = game_state[chat_id]
+    q = questions[idx]
+
+    text = f"Вопрос {idx + 1}:\n{q['q']}\n\n"
+    for i, opt in enumerate(q["options"], 1):
+        text += f"{i}) {opt}\n"
+
+    bot.send_message(chat_id, text)
+
+
+@bot.message_handler(commands=['start'])
+def start(msg):
+    chat_id = msg.chat.id
+    game_state[chat_id] = 0
+    bot.send_message(chat_id, "Игра «Кто хочет стать миллионером» началась!")
+    send_question(chat_id)
+
+
+@bot.message_handler(func=lambda m: True)
+def answer(msg):
+    chat_id = msg.chat.id
+
+    if chat_id not in game_state:
+        bot.send_message(chat_id, "Напиши /start чтобы начать игру.")
+        return
+
+    try:
+        user_ans = int(msg.text)
+    except:
+        bot.send_message(chat_id, "Введи номер ответа (1–4).")
+        return
+
+    idx = game_state[chat_id]
+    correct = questions[idx]["answer"]
+
+    if user_ans == correct:
+        bot.send_message(chat_id, "Правильно!")
+
+        game_state[chat_id] += 1
+
+        if game_state[chat_id] >= len(questions):
+            bot.send_message(chat_id, "Поздравляю! Ты стал миллионером!")
+            del game_state[chat_id]
+        else:
+            send_question(chat_id)
+
+    else:
+        bot.send_message(chat_id, "Неправильно! Игра окончена.")
+        del game_state[chat_id]
+
+
+bot.polling()
